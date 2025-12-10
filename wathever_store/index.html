@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Wathever | Store</title>
+    
+    <!-- FAVICON -->
+    <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/3408/3408506.png">
+    
+    <!-- FONTS -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;900&display=swap" rel="stylesheet">
+
+    <!-- FIREBASE -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
+
+    <style>
+        /* --- DESIGN SETTINGS --- */
+        :root { --primary: #ff8800; --bg: #0a0a0a; --card: #141414; --text: #fff; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Poppins', sans-serif; -webkit-tap-highlight-color: transparent; }
+        
+        body { background: var(--bg); color: var(--text); display: block; min-height: 100vh; overflow-x: hidden; }
+
+        /* HEADER */
+        header { 
+            background: linear-gradient(135deg, #ff8800 0%, #ff5500 100%); 
+            padding: 10px 20px; 
+            position: fixed; width: 100%; top: 0; left: 0; z-index: 1000; 
+            display: flex; justify-content: space-between; align-items: center; 
+            border-bottom: 2px solid #fff; box-shadow: 0 4px 15px rgba(255, 136, 0, 0.3); height: 60px;
+        }
+        
+        /* HEADER TEXT */
+        .logo-text { 
+            font-size: 1.5rem; font-weight: 900; color: #000; font-style: italic; 
+            text-transform: uppercase; letter-spacing: 1px;
+        }
+        
+        .logout-btn { background: rgba(0,0,0,0.2); border: none; padding: 6px 12px; border-radius: 5px; color: white; font-weight: bold; cursor: pointer; font-size: 0.8rem; }
+
+        /* NAV BAR */
+        .nav-bar { 
+            background: #111; padding: 10px; display: flex; gap: 10px; overflow-x: auto; 
+            position: fixed; top: 60px; width: 100%; z-index: 900; box-shadow: 0 5px 10px rgba(0,0,0,0.5); 
+        }
+        .nav-btn { background: #222; color: #ccc; border: 1px solid #333; padding: 8px 15px; border-radius: 4px; font-size: 0.85rem; cursor: pointer; white-space: nowrap; font-weight: 600; flex: 0 0 auto; }
+        .nav-btn:hover { background: var(--primary); color: #000; }
+
+        /* MAIN CONTENT */
+        main { max-width: 1200px; margin: 0 auto; padding: 20px; padding-top: 130px; width: 100%; min-height: 80vh; }
+
+        /* FOOTER STYLE */
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #444;
+            font-size: 0.8rem;
+            font-weight: 600;
+            border-top: 1px solid #1a1a1a;
+            margin-top: 20px;
+            letter-spacing: 0.5px;
+        }
+
+        /* CARDS */
+        .section-header { border-left: 4px solid var(--primary); padding-left: 10px; margin: 30px 0 15px; }
+        .section-title { font-size: 1.3rem; font-weight: 800; color: white; text-transform: uppercase; font-style: italic; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 15px; }
+        .card { background: var(--card); border-radius: 8px; overflow: hidden; position: relative; border: 1px solid #333; display: flex; flex-direction: column; transition: 0.2s; }
+        .card-img { width: 100%; height: 120px; object-fit: cover; background: #000; }
+        .card-body { padding: 12px; display: flex; flex-direction: column; gap: 5px; flex-grow: 1; }
+        .card-title { font-size: 0.95rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .badges { display: flex; gap: 5px; font-size: 0.7rem; color: #bbb; margin-bottom: 5px; }
+        .badge { background: #222; padding: 2px 5px; border-radius: 3px; border: 1px solid #444; }
+        .dl-btn { background: transparent; border: 1px solid var(--primary); color: var(--primary); text-align: center; padding: 8px; border-radius: 4px; text-decoration: none; font-size: 0.8rem; font-weight: 800; margin-top: auto; display: block; }
+        
+        /* CONTROLS & UI */
+        .controls { display: flex; gap: 10px; margin-bottom: 20px; }
+        #searchBar { flex-grow: 1; padding: 12px; border-radius: 4px; border: 1px solid #333; background: #1a1a1a; color: white; outline: none; }
+        #adminBtn { background: var(--primary); color: black; border: none; padding: 0 20px; border-radius: 4px; font-weight: bold; cursor: pointer; display: none; white-space: nowrap; }
+        .card-actions { position: absolute; top: 5px; right: 5px; display: flex; gap: 5px; z-index: 10; }
+        .action-btn { width: 28px; height: 28px; border-radius: 4px; border: none; cursor: pointer; color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; }
+        .btn-del { background: rgba(200,0,0,0.9); }
+        .btn-edit { background: rgba(0, 100, 200, 0.9); }
+        #toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 99999; display: flex; flex-direction: column; gap: 10px; pointer-events: none; }
+        .toast { background: #222; border-left: 4px solid var(--primary); padding: 12px 20px; border-radius: 4px; animation: slideIn 0.3s forwards; color:white; pointer-events: all; }
+        @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
+        .spinner { border: 4px solid #333; border-top: 4px solid var(--primary); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 50px auto; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* AUTH & MODAL */
+        #authOverlay, .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 9999; display: flex; justify-content: center; align-items: center; flex-direction: column; }
+        .auth-box, .modal-content { background: #141414; padding: 40px 25px; border-radius: 10px; width: 90%; max-width: 350px; border: 1px solid #333; text-align: center; border-top: 3px solid var(--primary); }
+        
+        .inp { width: 100%; padding: 12px; background: #222; border: 1px solid #333; color: white; border-radius: 4px; outline: none; margin-bottom: 12px; }
+        .btn-full { width: 100%; padding: 12px; background: var(--primary); color: #000; border: none; border-radius: 4px; font-weight: 800; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+    <div id="toast-container"></div>
+
+    <!-- AUTH SCREEN -->
+    <div id="authOverlay">
+        <div id="loginBox" class="auth-box">
+            <h1 style="color:var(--primary); font-size: 2.2rem; margin-bottom:25px; font-weight:900; letter-spacing:2px; text-shadow: 0 0 15px rgba(255,136,0,0.3);">WATHEVER</h1>
+            <input type="text" id="loginUser" class="inp" placeholder="Username">
+            <input type="password" id="loginPass" class="inp" placeholder="Password">
+            <button class="btn-full" onclick="login()">ENTER</button>
+            <button style="background:none; border:none; color:#888; margin-top:15px; font-size:0.8rem;" onclick="toggleAuth('signup')">Create Account</button>
+        </div>
+        <div id="signupBox" class="auth-box" style="display: none;">
+            <h1 style="color:var(--primary); font-size: 2.2rem; margin-bottom:10px; font-weight:900; letter-spacing:2px;">WATHEVER</h1>
+            <h3 style="color:white; margin-bottom:20px; font-weight:normal; font-size:0.9rem; color:#aaa;">CREATE ACCOUNT</h3>
+            <input type="text" id="signupUser" class="inp" placeholder="Pick Username">
+            <input type="password" id="signupPass" class="inp" placeholder="Pick Password">
+            <button class="btn-full" onclick="signup()">SIGN UP</button>
+            <button style="background:none; border:none; color:#888; margin-top:15px; font-size:0.8rem;" onclick="toggleAuth('login')">Back to Login</button>
+        </div>
+    </div>
+
+    <!-- MAIN APP -->
+    <div id="mainWebsite" style="display:none;">
+        <header>
+            <div class="logo-text">WATHEVER</div>
+            <button class="logout-btn" onclick="openLogoutModal()">LOGOUT</button>
+        </header>
+
+        <div class="nav-bar">
+            <button class="nav-btn" onclick="scrollToSec('sec-phone-game')">Phone Games</button>
+            <button class="nav-btn" onclick="scrollToSec('sec-phone-app')">Phone Apps</button>
+            <button class="nav-btn" onclick="scrollToSec('sec-pc-game')">PC Games</button>
+            <button class="nav-btn" onclick="scrollToSec('sec-pc-app')">PC Apps</button>
+            <!-- NAME CHANGED HERE -->
+            <button class="nav-btn" onclick="scrollToSec('sec-mod-pack')">Games Mod and Maps</button>
+        </div>
+
+        <main>
+            <div class="controls">
+                <input type="text" id="searchBar" placeholder="🔍 Search..." onkeyup="render()">
+                <button id="adminBtn" onclick="openModal()">UPLOAD</button>
+            </div>
+
+            <div id="loader" class="spinner"></div>
+            <div id="emptyMsg" style="text-align:center; color:#666; display:none; margin-top:20px;">No items found.</div>
+
+            <div id="sec-phone-game"><div class="section-header"><span class="section-title">Phone Games</span></div><div id="grid-phone-game" class="grid"></div></div>
+            <div id="sec-phone-app"><div class="section-header"><span class="section-title">Phone Apps</span></div><div id="grid-phone-app" class="grid"></div></div>
+            <div id="sec-pc-game"><div class="section-header"><span class="section-title">PC Games</span></div><div id="grid-pc-game" class="grid"></div></div>
+            <div id="sec-pc-app"><div class="section-header"><span class="section-title">PC Apps</span></div><div id="grid-pc-app" class="grid"></div></div>
+            
+            <!-- NAME CHANGED HERE -->
+            <div id="sec-mod-pack"><div class="section-header"><span class="section-title">Games Mod and Maps</span></div><div id="grid-mod-pack" class="grid"></div></div>
+        </main>
+
+        <div class="footer">
+            wathever_store made by M.Adeel
+        </div>
+    </div>
+
+    <!-- LOGOUT MODAL -->
+    <div id="logoutModal" class="modal" style="display:none;">
+        <div class="modal-content" style="text-align: center;">
+            <h3 style="color:var(--primary); margin-bottom:10px;">LOGOUT</h3>
+            <p style="color:#ccc; margin-bottom:20px;">Are you sure you want to exit?</p>
+            <div style="display:flex; gap:10px; justify-content: center;">
+                <button class="btn-full" style="background:#333; color:white; width:auto; padding:10px 30px;" onclick="closeLogoutModal()">NO</button>
+                <button class="btn-full" style="width:auto; padding:10px 30px;" onclick="confirmLogout()">YES</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- UPLOAD MODAL -->
+    <div id="uploadModal" class="modal" style="display:none;">
+        <div class="modal-content">
+            <h3 id="modalTitle" style="color:var(--primary); margin-bottom:15px;">ADD ITEM</h3>
+            <input type="hidden" id="editId">
+            <select id="uType" class="inp">
+                <option value="phone-game">Phone Game</option>
+                <option value="phone-app">Phone App</option>
+                <option value="pc-game">PC Game</option>
+                <option value="pc-app">PC App</option>
+                <!-- NAME CHANGED HERE -->
+                <option value="mod-pack">Games Mod and Maps</option>
+            </select>
+            <input type="text" id="uName" class="inp" placeholder="Name">
+            <div style="display:flex; gap:10px;">
+                <input type="text" id="uSize" class="inp" placeholder="Size">
+                <input type="text" id="uVer" class="inp" placeholder="Ver">
+            </div>
+            <input type="file" id="uFile" accept="image/*" class="inp">
+            <input type="text" id="uImg" class="inp" placeholder="OR Image Link">
+            <input type="text" id="uLink" class="inp" placeholder="Download Link">
+            <div style="display:flex; gap:10px;">
+                <button class="btn-full" style="background:#333; color:white;" onclick="document.getElementById('uploadModal').style.display='none'">Cancel</button>
+                <button id="saveBtn" class="btn-full" onclick="saveItem()">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- CONFIG ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyCSLEvFGcjhyXqYY7tF9lApBiiQU9e7gcI",
+            authDomain: "wathever-store.firebaseapp.com",
+            databaseURL: "https://wathever-store-default-rtdb.firebaseio.com",
+            projectId: "wathever-store",
+            storageBucket: "wathever-store.firebasestorage.app",
+            messagingSenderId: "124860496784",
+            appId: "1:124860496784:web:501fb16cc93e6e43a9d115"
+        };
+        try { firebase.initializeApp(firebaseConfig); var db = firebase.database(); } catch(e){}
+
+        const ADMIN = "wathever44"; 
+        const PASS = "adeel@2601";
+        let currentUser = null;
+        let items = [];
+        let users = [];
+
+        function toast(m) { const d=document.createElement('div'); d.className='toast'; d.innerText=m; document.getElementById('toast-container').appendChild(d); setTimeout(()=>d.remove(),3000); }
+        function toggleAuth(mode) { 
+            document.getElementById('loginBox').style.display = mode==='login'?'block':'none'; 
+            document.getElementById('signupBox').style.display = mode==='signup'?'block':'none'; 
+        }
+
+        db.ref('users').on('value', s => { 
+            users = []; 
+            const d=s.val(); 
+            if(d) Object.values(d).forEach(u=>users.push(u)); 
+        });
+
+        // AUTO LOGIN CHECK
+        window.addEventListener('load', () => {
+            const saved = localStorage.getItem('wathever_user');
+            if(saved) {
+                currentUser = JSON.parse(saved);
+                initApp();
+            }
+        });
+
+        function signup() {
+            const u = document.getElementById('signupUser').value.trim();
+            const p = document.getElementById('signupPass').value;
+            if(!u || !p) return toast("Fill all fields");
+            if(u === ADMIN) return toast("Cannot use Admin name");
+            if(users.find(x => x.u === u)) return toast("Username taken");
+
+            db.ref('users').push({u, p})
+                .then(() => { toast("Created! Login now."); toggleAuth('login'); })
+                .catch(e => toast("Error: Check Firebase Rules"));
+        }
+
+        function login() {
+            const u = document.getElementById('loginUser').value.trim();
+            const p = document.getElementById('loginPass').value;
+            
+            let isAdmin = (u===ADMIN && p===PASS);
+            let isUser = users.find(x => x.u===u && x.p===p);
+
+            if(isAdmin || isUser) {
+                currentUser = { u, isAdmin };
+                localStorage.setItem('wathever_user', JSON.stringify(currentUser));
+                initApp();
+                document.getElementById('loginUser').value = '';
+                document.getElementById('loginPass').value = '';
+            } else {
+                toast("Wrong Username or Password");
+            }
+        }
+
+        function openLogoutModal() {
+            document.getElementById('logoutModal').style.display = 'flex';
+        }
+        function closeLogoutModal() {
+            document.getElementById('logoutModal').style.display = 'none';
+        }
+        function confirmLogout() {
+            localStorage.removeItem('wathever_user');
+            location.reload();
+        }
+
+        function initApp() {
+            document.getElementById('authOverlay').style.display='none';
+            document.getElementById('mainWebsite').style.display='block';
+            if(currentUser.isAdmin) document.getElementById('adminBtn').style.display='block';
+
+            db.ref('items').on('value', snap => {
+                document.getElementById('loader').style.display='none';
+                items = [];
+                const data = snap.val();
+                if(data) {
+                    Object.keys(data).forEach(k => items.push({id:k, ...data[k]}));
+                    document.getElementById('emptyMsg').style.display='none';
+                } else {
+                    document.getElementById('emptyMsg').style.display='block';
+                }
+                render();
+            });
+        }
+
+        function scrollToSec(id) {
+            const el = document.getElementById(id);
+            if(el) window.scrollTo({ top: el.offsetTop - 120, behavior: 'smooth'});
+        }
+
+        function render() {
+            const q = document.getElementById('searchBar').value.toLowerCase();
+            // UPDATED LIST HERE
+            ['phone-game','phone-app','pc-game','pc-app','mod-pack'].forEach(k => document.getElementById('grid-'+k).innerHTML='');
+
+            items.slice().reverse().forEach(item => {
+                if(item.name.toLowerCase().includes(q)) {
+                    let type = item.type || 'phone-game';
+                    const div = document.createElement('div'); div.className = 'card';
+                    
+                    let actions = '';
+                    if(currentUser.isAdmin) {
+                        actions = `<div class="card-actions">
+                            <button class="action-btn btn-edit" onclick="edit('${item.id}')">✎</button>
+                            <button class="action-btn btn-del" onclick="del('${item.id}')">×</button>
+                        </div>`;
+                    }
+                    div.innerHTML = `
+                        ${actions}
+                        <img src="${item.img}" class="card-img" onerror="this.src='https://via.placeholder.com/150/000000/FFFFFF?text=No+Img'">
+                        <div class="card-body">
+                            <div class="card-title">${item.name}</div>
+                            <div class="badges">
+                                ${item.size ? `<span class="badge">${item.size}</span>` : ''}
+                                ${item.ver ? `<span class="badge">v${item.ver}</span>` : ''}
+                            </div>
+                            <a href="${item.link}" target="_blank" class="dl-btn">DOWNLOAD</a>
+                        </div>
+                    `;
+                    document.getElementById('grid-'+type)?.appendChild(div);
+                }
+            });
+        }
+
+        function openModal() {
+            document.getElementById('modalTitle').innerText = "ADD NEW ITEM";
+            document.getElementById('editId').value = "";
+            document.getElementById('uploadModal').style.display='flex';
+            ['uName','uLink','uImg','uSize','uVer','uFile'].forEach(id=>document.getElementById(id).value='');
+        }
+
+        function edit(id) {
+            const i = items.find(x => x.id === id);
+            document.getElementById('modalTitle').innerText = "EDIT ITEM";
+            document.getElementById('editId').value = id;
+            document.getElementById('uType').value = i.type;
+            document.getElementById('uName').value = i.name;
+            document.getElementById('uLink').value = i.link;
+            document.getElementById('uSize').value = i.size || '';
+            document.getElementById('uVer').value = i.ver || '';
+            document.getElementById('uImg').value = i.img.startsWith('data:') ? '' : i.img;
+            document.getElementById('uploadModal').style.display='flex';
+        }
+
+        function saveItem() {
+            const btn = document.getElementById('saveBtn');
+            const id = document.getElementById('editId').value;
+            const obj = {
+                type: document.getElementById('uType').value,
+                name: document.getElementById('uName').value,
+                link: document.getElementById('uLink').value,
+                size: document.getElementById('uSize').value,
+                ver: document.getElementById('uVer').value,
+                date: Date.now()
+            };
+            const fileImg = document.getElementById('uFile').files[0];
+
+            if(!obj.name || !obj.link) return toast("Name & Link required");
+            btn.innerText = "Saving..."; btn.disabled = true;
+
+            const finalSave = (imgData) => {
+                if(imgData) obj.img = imgData;
+                else if(!id && !obj.img) obj.img = document.getElementById('uImg').value;
+
+                if(id) {
+                    if(!obj.img) delete obj.img; 
+                    db.ref('items/'+id).update(obj).then(done);
+                } else {
+                    db.ref('items').push(obj).then(done);
+                }
+            };
+            const done = () => {
+                document.getElementById('uploadModal').style.display='none';
+                toast(id ? "Updated!" : "Uploaded!");
+                btn.innerText="Save"; btn.disabled=false;
+            };
+
+            if(fileImg) {
+                const r = new FileReader(); r.readAsDataURL(fileImg);
+                r.onload = e => {
+                    const i = new Image(); i.src = e.target.result;
+                    i.onload = () => {
+                        const c = document.createElement('canvas');
+                        const s = 200/i.width; c.width=200; c.height=i.height*s;
+                        c.getContext('2d').drawImage(i,0,0,c.width,c.height);
+                        finalSave(c.toDataURL('image/jpeg',0.6));
+                    }
+                }
+            } else finalSave();
+        }
+
+        function del(id) { if(confirm("Delete item?")) db.ref('items/'+id).remove(); }
+    </script>
+</body>
+</html>
